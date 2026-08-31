@@ -418,13 +418,25 @@ function renderChart(history, latest){
   const FS = narrow ? 13 : 10.5, FSL = narrow ? 13.5 : 11;
   const thr = latest.threshold_per_person;
   const vals = pts.map(p => p.best);
-  let lo = Math.min(...vals, thr), hi = Math.max(...vals, thr);
-  const pad = Math.max((hi - lo) * .18, 8000);
+  const dLo = Math.min(...vals), dHi = Math.max(...vals);
+  const spread = Math.max(dHi - dLo, 1);
+
+  // 목표가가 실제 가격대에서 크게 떨어져 있으면 축에 포함하지 않는다.
+  // 포함하면 세로 범위가 늘어나 정작 봐야 할 가격 변동이 평평하게 눌린다.
+  const thrInScale = thr >= dLo - spread * 1.5 && thr <= dHi + spread * 1.5;
+  let lo = thrInScale ? Math.min(dLo, thr) : dLo;
+  let hi = thrInScale ? Math.max(dHi, thr) : dHi;
+  const pad = Math.max((hi - lo) * .22, 6000);
   lo -= pad; hi += pad;
 
   const x = i => L + (W - L - R) * (i / (pts.length - 1));
   const y = v => T + (H - T - B) * (1 - (v - lo) / (hi - lo));
   const xy = pts.map((p,i) => [x(i), y(p.best)]);
+
+  // 범위가 좁으면 만 단위 반올림만으로는 눈금이 중복된다(68만, 68만…)
+  const tickFmt = (hi - lo) >= 100000
+    ? v => `${Math.round(v/10000)}만`
+    : v => `${(v/10000).toFixed(1)}만`;
 
   let grid = "";
   for(let i = 0; i <= 3; i++){
@@ -432,7 +444,7 @@ function renderChart(history, latest){
     grid += `<line x1="${L}" y1="${yy.toFixed(1)}" x2="${W-R}" y2="${yy.toFixed(1)}"
                    stroke="var(--hair)" stroke-width="1"/>
              <text x="${L+2}" y="${(yy-7).toFixed(1)}" font-size="${FS}"
-                   fill="var(--muted)" letter-spacing=".06em">${Math.round(v/10000)}만</text>`;
+                   fill="var(--muted)" letter-spacing=".06em">${tickFmt(v)}</text>`;
   }
 
   const line = smoothPath(xy);
@@ -456,12 +468,26 @@ function renderChart(history, latest){
   const ticks = new Set([0, last]);
   const step = Math.max(1, Math.ceil(pts.length / (narrow ? 3 : 5)));
   for(let i = step; i < last - step * 0.5; i += step) ticks.add(i);
+  // 하루 두 번 수집하므로 같은 날짜 라벨이 겹친다. 같은 값은 마지막 지점만 남긴다.
+  const byLabel = new Map();
+  [...ticks].sort((a,b) => a-b).forEach(i => byLabel.set(fmtShort(pts[i].at), i));
+  const keep = [...byLabel.values()].sort((a,b) => a-b);
+
   let xlab = "";
-  [...ticks].sort((a,b) => a-b).forEach(i => {
-    const anchor = i === 0 ? "start" : (i === last ? "end" : "middle");
+  keep.forEach((i, k) => {
+    const anchor = k === 0 ? "start" : (k === keep.length - 1 ? "end" : "middle");
     xlab += `<text x="${x(i).toFixed(1)}" y="${H-11}" text-anchor="${anchor}"
              font-size="${FS}" fill="var(--muted)" letter-spacing=".05em">${fmtShort(pts[i].at)}</text>`;
   });
+
+  const thrMark = thrInScale
+    ? `<line x1="${L}" y1="${y(thr).toFixed(1)}" x2="${W-R}" y2="${y(thr).toFixed(1)}"
+             stroke="var(--gold)" stroke-width="1.4" stroke-dasharray="2 5"/>
+       <text x="${W-R}" y="${(y(thr)+17).toFixed(1)}" text-anchor="end" font-size="${FSL}"
+             font-weight="600" fill="var(--gold)" letter-spacing=".04em">목표 ${won(thr)}</text>`
+    : `<text x="${W-R}" y="${H-B+16}" text-anchor="end" font-size="${FSL}"
+             font-weight="600" fill="var(--gold)" letter-spacing=".04em"
+             opacity=".85">목표 ${won(thr)} ↓ 아직 이 범위 아래</text>`;
 
   box.innerHTML = `
   <svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="항공권 가격 추이">
@@ -475,10 +501,7 @@ function renderChart(history, latest){
     <path d="${area}" fill="url(#fade)"/>
     <path d="${line}" fill="none" stroke="var(--sea)" stroke-width="2"
           stroke-linecap="round" stroke-linejoin="round"/>
-    <line x1="${L}" y1="${y(thr).toFixed(1)}" x2="${W-R}" y2="${y(thr).toFixed(1)}"
-          stroke="var(--gold)" stroke-width="1.4" stroke-dasharray="2 5"/>
-    <text x="${W-R}" y="${(y(thr)+17).toFixed(1)}" text-anchor="end" font-size="${FSL}"
-          font-weight="600" fill="var(--gold)" letter-spacing=".04em">목표 ${won(thr)}</text>
+    ${thrMark}
     ${dots}${xlab}
   </svg>`;
 }
