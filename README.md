@@ -1,8 +1,10 @@
 # 보홀 항공권 최저가 추적 (ICN ⇄ TAG)
 
 인천 → 보홀 팡라오 **2026-11-18(수) 출발 / 2026-11-21(토) 귀국** 왕복 항공권을
-GitHub Actions 가 **8시간마다 자동으로 수집**해서 웹사이트에 기록하고,
+GitHub Actions 가 **12시간마다 자동으로 수집**해서 웹사이트에 기록하고,
 **1인 30만원대(399,000원 이하)** 로 떨어지면 텔레그램으로 알립니다.
+
+**직항편만 추적합니다.** (인천-보홀 직항은 현재 제주항공이 운항)
 
 맥북과 무관하게 GitHub 서버에서 돌기 때문에 노트북이 꺼져 있어도 계속 수집됩니다.
 
@@ -24,7 +26,7 @@ GitHub Actions 가 **8시간마다 자동으로 수집**해서 웹사이트에 �
 ### ② RapidAPI 계정 + Sky-Scrapper 구독 — 필수
 - 가입: https://rapidapi.com/auth/sign-up
 - 접속: https://rapidapi.com/apiheya/api/sky-scrapper → **Subscribe to Test → Basic (무료)** 선택
-- 무료 등급은 **월 100회** 호출 제한 → 그래서 8시간 주기(하루 3회 ≈ 월 93회)로 맞춰 두었습니다.
+- 무료 등급은 **월 100회** 호출 제한 → 12시간 주기(하루 2회 ≈ 월 62회)로 여유 있게 잡았습니다.
 - 구독 후 `X-RapidAPI-Key` 값을 복사해 두세요.
 
 > ⚠️ **스카이스캐너 공식 API 는 개인이 가입할 수 없습니다.** 상업적 파트너십 심사를 거친
@@ -110,7 +112,7 @@ https://<내계정>.github.io/bohol-flight/
 
 ## 4. 알아두실 점
 
-- **무료 한도**: 월 100회. 수동 실행(`Run workflow`)도 한도를 소모하니 남발하지 마세요.
+- **무료 한도**: 월 100회, 자동 수집은 월 약 62회. 수동 실행(`Run workflow`)도 한도를 소모합니다.
   한도를 넘기면 사이트에 "RapidAPI 호출 한도 초과" 오류가 표시됩니다.
 - **가격 정확도**: 스카이스캐너 데이터 기반이지만 LCC 특가·유류할증료 반영 시점 차이로
   실제 결제가와 다를 수 있습니다. **알림은 "지금 확인할 때"라는 신호**로 쓰시고,
@@ -127,6 +129,21 @@ https://<내계정>.github.io/bohol-flight/
 | `collector/collect.py` | 수집 → 기록 → 알림 판정 → 텔레그램 발송 |
 | `collector/skyscanner.py` | Sky-Scrapper API 어댑터 |
 | `collector/find_ids.py` | 공항 ID 1회 조회용 |
-| `.github/workflows/collect.yml` | 8시간 주기 자동 실행 |
+| `.github/workflows/collect.yml` | 12시간 주기 자동 실행 (한국시간 09:10 / 21:10) |
 | `docs/index.html` | 대시보드 (GitHub Pages 로 서빙) |
 | `docs/data/*.json` | 가격 이력 · 최신 결과 (자동 갱신·커밋) |
+
+---
+
+## 직항만 추적하는 방식
+
+이 API 는 `stops=direct` 같은 서버측 경유 필터를 **무시합니다**(경유편이 그대로 옵니다).
+그래서 두 가지를 함께 씁니다.
+
+1. 응답으로 오는 여정 목록에서 `stopCount == 0` 인 것만 걸러 화면에 표시
+2. 최저가 판정은 `filterStats.stopPrices.direct` 값을 사용
+   — 응답에 실려 오지 않은 더 싼 직항까지 반영된 값이라 1번보다 정확합니다
+
+경유편도 다시 보고 싶으면 `config.json` 의 `trip.non_stop_only` 를 `false` 로 바꾸세요.
+단, 직항 기준으로 쌓인 이력과 섞이면 그래프가 왜곡되므로 `docs/data/history.json` 의
+`points` 를 비우는 편이 좋습니다.
