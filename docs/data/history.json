@@ -1,7 +1,22 @@
 {
- "route": null,
- "points": [],
+ "route": {
+  "origin": "ICN",
+  "destination": "TAG",
+  "origin_name": "인천",
+  "destination_name": "보홀(팡라오)",
+  "departure_date": "2026-11-18",
+  "return_date": "2026-11-21",
+  "adults": 2,
+  "currency": "KRW"
+ },
+ "points": [
+  {
+   "at": "2026-08-31T22:39:58+09:00",
+   "best": 688855,
+   "count": 1
+  }
+ ],
  "alerts": [],
- "all_time_low": null,
- "updated_at": null
+ "all_time_low": 688855,
+ "updated_at": "2026-08-31T22:39:58+09:00"
 }
