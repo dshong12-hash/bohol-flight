@@ -1,0 +1,28 @@
+{
+ "collected_at": null,
+ "trip": {
+  "origin": "ICN",
+  "destination": "TAG",
+  "origin_name": "인천",
+  "destination_name": "보홀(팡라오)",
+  "departure_date": "2026-11-18",
+  "return_date": "2026-11-21",
+  "adults": 2,
+  "currency": "KRW"
+ },
+ "threshold_per_person": 399000,
+ "baseline_per_person": 350000,
+ "best_per_person": null,
+ "best_total": null,
+ "all_time_low": null,
+ "offers": [],
+ "search_status": null,
+ "error": null,
+ "alerted": false,
+ "alert_reason": "아직 수집 전",
+ "links": {
+  "skyscanner": "https://www.skyscanner.co.kr/transport/flights/icn/tag/261118/261121/?adults=2",
+  "naver": "https://flight.naver.com/flights/international/ICN-TAG-20261118/TAG-ICN-20261121?adult=2",
+  "google": "https://www.google.com/travel/flights?q=Flights%20from%20ICN%20to%20TAG%20on%202026-11-18%20through%202026-11-21"
+ }
+}

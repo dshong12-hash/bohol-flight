@@ -1,0 +1,53 @@
+name: 항공권 가격 수집
+
+on:
+  schedule:
+    # 8시간마다 = 하루 3회 (UTC 기준 00:10 / 08:10 / 16:10)
+    # RapidAPI 무료 등급 월 100회 한도에 맞춘 주기입니다.
+    - cron: "10 */8 * * *"
+  workflow_dispatch:        # Actions 탭에서 수동 실행용
+
+permissions:
+  contents: write
+
+concurrency:
+  group: collect
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 가격 수집
+        id: collect
+        continue-on-error: true    # 실패해도 오류 상태를 사이트에 기록해야 하므로 계속 진행
+        env:
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          SITE_URL: ${{ vars.SITE_URL }}
+        run: python3 collector/collect.py
+
+      - name: 결과 커밋
+        run: |
+          git config user.name  "flight-watcher[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/data
+          if git diff --staged --quiet; then
+            echo "변경 사항 없음"
+          else
+            git commit -m "데이터 수집: $(date -u '+%Y-%m-%d %H:%M UTC')"
+            git push
+          fi
+
+      - name: 수집 실패 시 워크플로도 실패 처리
+        if: steps.collect.outcome == 'failure'
+        run: |
+          echo "수집 단계가 실패했습니다. 위 로그를 확인하세요."
+          exit 1

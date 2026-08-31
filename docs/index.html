@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>보홀 항공권 최저가 추적</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --panel:#ffffff; --line:#e3e6ea; --ink:#12161c; --muted:#6b7683;
+    --accent:#2563eb; --good:#0f9d58; --good-bg:#e7f6ee; --warn:#b45309; --warn-bg:#fdf3e3;
+    --bad:#c0392b; --bad-bg:#fdecea; --grid:#eceff3; --shadow:0 1px 3px rgba(16,24,40,.06),0 1px 2px rgba(16,24,40,.04);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0f1319; --panel:#161b23; --line:#262d38; --ink:#e8ecf1; --muted:#94a1b1;
+      --accent:#60a5fa; --good:#4ade80; --good-bg:#12291d; --warn:#fbbf24; --warn-bg:#2a2113;
+      --bad:#f87171; --bad-bg:#2b1616; --grid:#1e242e; --shadow:none;
+    }
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard",
+      "Malgun Gothic",system-ui,sans-serif;
+    line-height:1.55; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:880px; margin:0 auto; padding:28px 18px 64px}
+  header{margin-bottom:22px}
+  h1{font-size:21px; margin:0 0 6px; letter-spacing:-.02em}
+  .route{color:var(--muted); font-size:14px}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:14px;
+        padding:20px; margin-bottom:16px; box-shadow:var(--shadow)}
+  .card h2{font-size:13px; margin:0 0 14px; color:var(--muted);
+           font-weight:600; letter-spacing:.02em}
+
+  .badge{display:inline-block; padding:4px 11px; border-radius:999px;
+         font-size:12.5px; font-weight:700}
+  .badge.good{background:var(--good-bg); color:var(--good)}
+  .badge.warn{background:var(--warn-bg); color:var(--warn)}
+  .badge.bad{background:var(--bad-bg); color:var(--bad)}
+
+  .price{font-size:46px; font-weight:750; letter-spacing:-.03em; margin:10px 0 2px;
+         font-variant-numeric:tabular-nums}
+  .price .unit{font-size:19px; font-weight:600; color:var(--muted); margin-left:5px}
+  .sub{color:var(--muted); font-size:14px}
+
+  .stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+         gap:14px; margin-top:20px; padding-top:18px; border-top:1px solid var(--line)}
+  .stat .k{font-size:12px; color:var(--muted); margin-bottom:3px}
+  .stat .v{font-size:17px; font-weight:650; font-variant-numeric:tabular-nums}
+  .delta.up{color:var(--bad)} .delta.down{color:var(--good)}
+
+  .chart-wrap{overflow-x:auto}
+  svg{display:block; width:100%; height:auto; min-width:420px}
+  .empty{color:var(--muted); font-size:14px; text-align:center; padding:34px 0}
+
+  table{width:100%; border-collapse:collapse; font-size:14px}
+  th{text-align:left; font-size:12px; color:var(--muted); font-weight:600;
+     padding:0 10px 9px 0; border-bottom:1px solid var(--line); white-space:nowrap}
+  td{padding:11px 10px 11px 0; border-bottom:1px solid var(--grid);
+     vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  td.num{font-variant-numeric:tabular-nums; font-weight:650; white-space:nowrap}
+  .tag{display:inline-block; padding:2px 8px; border-radius:6px; font-size:11.5px;
+       background:var(--grid); color:var(--muted); white-space:nowrap}
+  .tag.direct{background:var(--good-bg); color:var(--good); font-weight:650}
+  .table-scroll{overflow-x:auto}
+
+  .links{display:flex; flex-wrap:wrap; gap:9px}
+  .links a{display:inline-block; padding:9px 15px; border-radius:9px; font-size:14px;
+           text-decoration:none; border:1px solid var(--line); color:var(--ink);
+           background:var(--panel); font-weight:550}
+  .links a:hover{border-color:var(--accent); color:var(--accent)}
+
+  .notice{padding:12px 14px; border-radius:10px; font-size:13.5px; margin-bottom:16px}
+  .notice.err{background:var(--bad-bg); color:var(--bad)}
+  .notice.info{background:var(--grid); color:var(--muted)}
+  footer{color:var(--muted); font-size:12.5px; margin-top:26px; line-height:1.7}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>✈️ 보홀 항공권 최저가 추적</h1>
+    <div class="route" id="route">불러오는 중…</div>
+  </header>
+
+  <div id="notice"></div>
+
+  <section class="card" id="hero">
+    <div class="empty">데이터를 불러오는 중…</div>
+  </section>
+
+  <section class="card">
+    <h2>가격 추이 (1인 왕복)</h2>
+    <div class="chart-wrap" id="chart"><div class="empty">—</div></div>
+  </section>
+
+  <section class="card">
+    <h2>최저가 후보</h2>
+    <div class="table-scroll" id="offers"><div class="empty">—</div></div>
+  </section>
+
+  <section class="card">
+    <h2>예약 사이트에서 확인</h2>
+    <div class="links" id="links"></div>
+    <p class="sub" style="margin:14px 0 0">
+      수집값은 스카이스캐너 데이터 기반 참고용입니다. LCC 특가·유류할증료 반영 시점 차이로
+      실제 결제가와 다를 수 있으니 결제 전 위 사이트에서 최종 확인하세요.
+    </p>
+  </section>
+
+  <footer id="footer"></footer>
+</div>
+
+<script>
+const won = n => Number(n).toLocaleString("ko-KR") + "원";
+const el  = id => document.getElementById(id);
+
+function fmtDate(iso, withTime){
+  if(!iso) return "—";
+  const d = new Date(iso);
+  if(isNaN(d)) return iso;
+  const p = n => String(n).padStart(2,"0");
+  const base = `${d.getFullYear()}.${p(d.getMonth()+1)}.${p(d.getDate())}`;
+  return withTime ? `${base} ${p(d.getHours())}:${p(d.getMinutes())}` : base;
+}
+
+async function load(name){
+  const r = await fetch(`./data/${name}.json?t=${Date.now()}`);
+  if(!r.ok) throw new Error(`${name}.json 을 불러오지 못했습니다 (${r.status})`);
+  return r.json();
+}
+
+function renderHero(latest){
+  const t = latest.trip || {};
+  const adults = t.adults || 1;
+  const best = latest.best_per_person;
+  const thr = latest.threshold_per_person;
+  const base = latest.baseline_per_person;
+  const low = latest.all_time_low;
+
+  if(best == null){
+    el("hero").innerHTML =
+      `<div class="empty">아직 수집된 가격이 없습니다.<br>
+       GitHub Actions 의 <b>항공권 가격 수집</b> 워크플로를 한 번 실행해 보세요.</div>`;
+    return;
+  }
+
+  const hit = best <= thr;
+  const badge = hit
+    ? `<span class="badge good">🎯 목표가 도달 · 30만원대</span>`
+    : `<span class="badge warn">목표가(${won(thr)})까지 ${won(best - thr)} 남음</span>`;
+
+  const deltaBase = base != null ? best - base : null;
+  const stat = (k, v, cls) =>
+    `<div class="stat"><div class="k">${k}</div><div class="v ${cls||""}">${v}</div></div>`;
+
+  el("hero").innerHTML = `
+    ${badge}
+    <div class="price">${won(best)}<span class="unit">/ 1인 왕복</span></div>
+    <div class="sub">${adults}인 총액 ${won(best * adults)}</div>
+    <div class="stats">
+      ${stat("역대 최저가", low != null ? won(low) : "—")}
+      ${stat("목표가", won(thr))}
+      ${base != null ? stat("지난 구매가 대비",
+          (deltaBase > 0 ? "+" : "") + won(deltaBase),
+          deltaBase > 0 ? "delta up" : "delta down") : ""}
+      ${stat("마지막 수집", fmtDate(latest.collected_at, true))}
+    </div>`;
+}
+
+function renderChart(history, latest){
+  const pts = (history.points || []).slice(-120);
+  const box = el("chart");
+  if(pts.length === 0){ box.innerHTML = `<div class="empty">아직 기록이 없습니다.</div>`; return; }
+  if(pts.length === 1){
+    box.innerHTML = `<div class="empty">기록이 1건뿐입니다. 수집이 쌓이면 추이가 그려집니다.<br>
+      <b>${fmtDate(pts[0].at, true)}</b> · ${won(pts[0].best)}</div>`;
+    return;
+  }
+
+  const W = 720, H = 260, L = 66, R = 16, T = 18, B = 34;
+  const thr = latest.threshold_per_person;
+  const vals = pts.map(p => p.best);
+  let lo = Math.min(...vals, thr), hi = Math.max(...vals, thr);
+  const pad = Math.max((hi - lo) * 0.15, 10000);
+  lo -= pad; hi += pad;
+
+  const x = i => L + (W - L - R) * (pts.length === 1 ? 0.5 : i / (pts.length - 1));
+  const y = v => T + (H - T - B) * (1 - (v - lo) / (hi - lo));
+
+  // y축 눈금
+  let grid = "";
+  for(let i = 0; i <= 4; i++){
+    const v = lo + (hi - lo) * i / 4, yy = y(v);
+    grid += `<line x1="${L}" y1="${yy}" x2="${W-R}" y2="${yy}" stroke="var(--grid)" stroke-width="1"/>
+             <text x="${L-9}" y="${yy+4}" text-anchor="end" font-size="10.5"
+                   fill="var(--muted)">${Math.round(v/10000)}만</text>`;
+  }
+
+  const line = pts.map((p,i) => `${i?"L":"M"}${x(i).toFixed(1)},${y(p.best).toFixed(1)}`).join(" ");
+  const area = `${line} L${x(pts.length-1).toFixed(1)},${y(lo)} L${x(0).toFixed(1)},${y(lo)} Z`;
+
+  const minV = Math.min(...vals);
+  const dots = pts.map((p,i) => {
+    const isMin = p.best === minV;
+    return `<circle cx="${x(i).toFixed(1)}" cy="${y(p.best).toFixed(1)}"
+            r="${isMin?4.5:2.6}" fill="${isMin?"var(--good)":"var(--accent)"}">
+            <title>${fmtDate(p.at,true)} · ${won(p.best)}</title></circle>`;
+  }).join("");
+
+  // x축 라벨 (최대 5개)
+  const step = Math.max(1, Math.ceil(pts.length / 5));
+  let xlab = "";
+  for(let i = 0; i < pts.length; i += step){
+    xlab += `<text x="${x(i).toFixed(1)}" y="${H-11}" text-anchor="middle"
+             font-size="10.5" fill="var(--muted)">${fmtDate(pts[i].at)}</text>`;
+  }
+
+  box.innerHTML = `
+  <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="항공권 가격 추이">
+    <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="var(--accent)" stop-opacity=".22"/>
+      <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>
+    </linearGradient></defs>
+    ${grid}
+    <path d="${area}" fill="url(#g)"/>
+    <path d="${line}" fill="none" stroke="var(--accent)" stroke-width="2.2"
+          stroke-linejoin="round" stroke-linecap="round"/>
+    <line x1="${L}" y1="${y(thr)}" x2="${W-R}" y2="${y(thr)}" stroke="var(--good)"
+          stroke-width="1.6" stroke-dasharray="5 4"/>
+    <text x="${W-R}" y="${y(thr)-7}" text-anchor="end" font-size="11"
+          font-weight="700" fill="var(--good)">목표 ${won(thr)}</text>
+    ${dots}${xlab}
+  </svg>`;
+}
+
+function renderOffers(latest){
+  const offers = latest.offers || [];
+  const adults = (latest.trip || {}).adults || 1;
+  if(!offers.length){ el("offers").innerHTML = `<div class="empty">표시할 항공편이 없습니다.</div>`; return; }
+
+  const rows = offers.map(o => {
+    const s = o.stops;
+    const tag = s === 0 ? `<span class="tag direct">직항</span>`
+              : (s ? `<span class="tag">${s}회 경유</span>` : `<span class="tag">—</span>`);
+    const dur = o.duration_minutes
+      ? `${Math.floor(o.duration_minutes/60)}시간 ${o.duration_minutes%60}분` : "—";
+    return `<tr>
+      <td class="num">${won(o.price_per_person)}</td>
+      <td class="num" style="color:var(--muted);font-weight:500">${won(o.price_per_person*adults)}</td>
+      <td style="white-space:nowrap">${o.airline || "—"}</td>
+      <td>${tag}</td>
+      <td style="white-space:nowrap">${fmtDate(o.depart_at, true)}</td>
+      <td style="white-space:nowrap;color:var(--muted)">${dur}</td>
+    </tr>`;
+  }).join("");
+
+  el("offers").innerHTML = `<table>
+    <thead><tr><th>1인</th><th>${adults}인 총액</th><th>항공사</th>
+      <th>경유</th><th>출발</th><th>소요</th></tr></thead>
+    <tbody>${rows}</tbody></table>`;
+}
+
+function renderLinks(latest){
+  const L = latest.links || {};
+  const names = {skyscanner:"스카이스캐너", naver:"네이버항공권", google:"구글 플라이트"};
+  el("links").innerHTML = Object.keys(names)
+    .filter(k => L[k])
+    .map(k => `<a href="${L[k]}" target="_blank" rel="noopener">${names[k]} ↗</a>`)
+    .join("");
+}
+
+function renderNotice(latest){
+  let html = "";
+  if(latest.error)
+    html += `<div class="notice err"><b>마지막 수집 실패</b> — ${latest.error}</div>`;
+  if(latest.search_status && latest.search_status !== "complete")
+    html += `<div class="notice info">검색 상태: ${latest.search_status} — 결과가 일부만 반영됐을 수 있습니다.</div>`;
+  el("notice").innerHTML = html;
+}
+
+(async function(){
+  try{
+    const [latest, history] = await Promise.all([load("latest"), load("history")]);
+    const t = latest.trip || {};
+    el("route").textContent =
+      `${t.origin_name || t.origin} → ${t.destination_name || t.destination} · ` +
+      `${t.departure_date} ~ ${t.return_date} · ${t.adults || 1}인 왕복`;
+    document.title = `보홀 항공권 ${latest.best_per_person ? won(latest.best_per_person) : ""}`.trim();
+
+    renderNotice(latest);
+    renderHero(latest);
+    renderChart(history, latest);
+    renderOffers(latest);
+    renderLinks(latest);
+
+    const n = (history.points || []).length;
+    el("footer").innerHTML =
+      `총 ${n}회 수집 · 8시간마다 자동 갱신 · 마지막 갱신 ${fmtDate(history.updated_at, true)}<br>` +
+      `가격이 목표가 이하로 내려가면 텔레그램으로 알림이 갑니다.`;
+  }catch(e){
+    el("notice").innerHTML =
+      `<div class="notice err">데이터를 불러오지 못했습니다 — ${e.message}</div>`;
+    el("hero").innerHTML = `<div class="empty">아직 수집 데이터가 없습니다.</div>`;
+  }
+})();
+</script>
+</body>
+</html>
