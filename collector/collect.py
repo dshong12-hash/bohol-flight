@@ -160,19 +160,28 @@ def main():
     stamp = now_kst().replace(microsecond=0).isoformat()
     api_key = os.environ.get("RAPIDAPI_KEY", "").strip()
 
-    offers, status, error = [], None, None
+    offers, meta, error = [], {}, None
     if not api_key:
         error = "RAPIDAPI_KEY 가 설정되지 않았습니다."
     else:
         try:
-            offers, status = skyscanner.search_round_trip(
+            offers, meta = skyscanner.search_round_trip(
                 trip, config.get("sky_ids") or {}, api_key)
         except skyscanner.SkyscannerError as e:
             error = str(e)
         except Exception as e:
             error = "예상치 못한 오류: %s" % e
 
-    best = offers[0]["price_per_person"] if offers else None
+    status = meta.get("status")
+    direct_only = bool(trip.get("non_stop_only"))
+
+    # 직항만 볼 때는 filterStats 의 직항 최저가를 기준으로 삼는다. 응답에 실려 오는
+    # 여정 8건에 더 싼 직항이 빠져 있을 수 있기 때문이다.
+    listed = offers[0]["price_per_person"] if offers else None
+    if direct_only:
+        best = meta.get("direct_min") or listed
+    else:
+        best = listed
     threshold = int(alert_cfg.get("threshold_per_person", 399000))
 
     # ---- 이력 기록 (실패한 회차도 남겨서 사이트에서 공백을 알 수 있게 한다)
@@ -216,6 +225,9 @@ def main():
         "all_time_low": history["all_time_low"],
         "offers": offers[:MAX_OFFERS_KEPT],
         "search_status": status,
+        "direct_only": direct_only,
+        "listed_best": listed,
+        "one_stop_min": meta.get("one_stop_min"),
         "error": error,
         "alerted": alerted,
         "alert_reason": reason,
@@ -226,7 +238,9 @@ def main():
     print("[%s] 수집 결과" % stamp)
     if error:
         print("  오류: %s" % error)
-    print("  조회 건수: %d" % len(offers))
+    print("  조회 건수: %d%s" % (len(offers), " (직항만)" if direct_only else ""))
+    if direct_only and meta.get("one_stop_min"):
+        print("  참고 - 1회 경유 최저가: %s" % won(meta["one_stop_min"]))
     if best is not None:
         print("  최저가: %s / 1인 (총 %s)" % (won(best), won(best * adults)))
         print("  역대 최저: %s" % won(history["all_time_low"]))

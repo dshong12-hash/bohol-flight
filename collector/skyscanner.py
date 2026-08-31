@@ -74,12 +74,24 @@ def _parse_itineraries(payload, currency):
     if not isinstance(data, dict):
         raise SkyscannerError("예상과 다른 응답 형식입니다: %s" % str(payload)[:300])
 
+    meta = {
+        "status": (data.get("context") or {}).get("status"),
+        "direct_min": None,
+        "one_stop_min": None,
+    }
+    # filterStats.stopPrices 는 응답에 실리지 않은 항공편까지 포함한 경유별 최저가다.
+    # 반환되는 여정 목록(8건 내외)보다 넓은 범위를 커버하므로 최저가 기준으로 삼는다.
+    stop_prices = (data.get("filterStats") or {}).get("stopPrices") or {}
+    for key, field in (("direct", "direct_min"), ("one", "one_stop_min")):
+        info = stop_prices.get(key) or {}
+        if info.get("isPresent") and info.get("rawPrice") is not None:
+            meta[field] = int(round(float(info["rawPrice"])))
+
     itineraries = data.get("itineraries")
-    if itineraries is None:
-        # 일부 응답은 data.itineraries.results 형태로 내려온다
-        itineraries = ((data.get("itineraries") or {}) if isinstance(data.get("itineraries"), dict) else {}).get("results")
+    if isinstance(itineraries, dict):
+        itineraries = itineraries.get("results")
     if not itineraries:
-        return [], (data.get("context") or {}).get("status")
+        return [], meta
 
     offers = []
     for it in itineraries:
@@ -113,7 +125,7 @@ def _parse_itineraries(payload, currency):
         })
 
     offers.sort(key=lambda o: o["price_per_person"])
-    return offers, (data.get("context") or {}).get("status")
+    return offers, meta
 
 
 def search_round_trip(trip, ids, api_key):
@@ -149,5 +161,9 @@ def search_round_trip(trip, ids, api_key):
     if payload.get("status") is False:
         raise SkyscannerError("조회 실패: %s" % (payload.get("message") or payload))
 
-    offers, status = _parse_itineraries(payload, trip.get("currency", "KRW"))
-    return offers, status
+    offers, meta = _parse_itineraries(payload, trip.get("currency", "KRW"))
+
+    # 서버 쪽 stops 필터는 이 API 에서 무시되므로 직접 걸러낸다.
+    if trip.get("non_stop_only"):
+        offers = [o for o in offers if o.get("stops") == 0]
+    return offers, meta

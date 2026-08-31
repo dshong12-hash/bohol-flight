@@ -10,7 +10,8 @@
     "currency": "KRW",
     "market": "ko-KR",
     "country_code": "KR",
-    "cabin_class": "economy"
+    "cabin_class": "economy",
+    "non_stop_only": true
   },
   "sky_ids": {
     "origin_sky_id": "ICN",

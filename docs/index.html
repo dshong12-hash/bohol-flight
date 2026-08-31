@@ -97,7 +97,7 @@
   </section>
 
   <section class="card">
-    <h2>최저가 후보</h2>
+    <h2 id="offers-title">최저가 후보</h2>
     <div class="table-scroll" id="offers"><div class="empty">—</div></div>
   </section>
 
@@ -166,6 +166,8 @@ function renderHero(latest){
       ${base != null ? stat("지난 구매가 대비",
           (deltaBase > 0 ? "+" : "") + won(deltaBase),
           deltaBase > 0 ? "delta up" : "delta down") : ""}
+      ${latest.direct_only && latest.one_stop_min != null
+          ? stat("참고 · 1회 경유", won(latest.one_stop_min)) : ""}
       ${stat("마지막 수집", fmtDate(latest.collected_at, true))}
     </div>`;
 }
@@ -239,7 +241,12 @@ function renderChart(history, latest){
 function renderOffers(latest){
   const offers = latest.offers || [];
   const adults = (latest.trip || {}).adults || 1;
-  if(!offers.length){ el("offers").innerHTML = `<div class="empty">표시할 항공편이 없습니다.</div>`; return; }
+  if(!offers.length){
+    el("offers").innerHTML = `<div class="empty">${latest.direct_only
+      ? "이번 조회에서는 직항 편이 잡히지 않았습니다."
+      : "표시할 항공편이 없습니다."}</div>`;
+    return;
+  }
 
   const rows = offers.map(o => {
     const s = o.stops;
@@ -287,9 +294,11 @@ function renderNotice(latest){
     const t = latest.trip || {};
     el("route").textContent =
       `${t.origin_name || t.origin} → ${t.destination_name || t.destination} · ` +
-      `${t.departure_date} ~ ${t.return_date} · ${t.adults || 1}인 왕복`;
+      `${t.departure_date} ~ ${t.return_date} · ${t.adults || 1}인 왕복` +
+      (latest.direct_only ? " · 직항만" : "");
     document.title = `보홀 항공권 ${latest.best_per_person ? won(latest.best_per_person) : ""}`.trim();
 
+    if(latest.direct_only) el("offers-title").textContent = "직항 후보";
     renderNotice(latest);
     renderHero(latest);
     renderChart(history, latest);
@@ -298,7 +307,7 @@ function renderNotice(latest){
 
     const n = (history.points || []).length;
     el("footer").innerHTML =
-      `총 ${n}회 수집 · 8시간마다 자동 갱신 · 마지막 갱신 ${fmtDate(history.updated_at, true)}<br>` +
+      `총 ${n}회 수집 · 12시간마다 자동 갱신 · 마지막 갱신 ${fmtDate(history.updated_at, true)}<br>` +
       `가격이 목표가 이하로 내려가면 텔레그램으로 알림이 갑니다.`;
   }catch(e){
     el("notice").innerHTML =
