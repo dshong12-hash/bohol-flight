@@ -10,11 +10,14 @@ GitHub Actions 에서 주기 실행되는 것을 전제로 한다.
 """
 
 import datetime as dt
+import html
 import json
 import os
+import smtplib
 import sys
 import urllib.parse
 import urllib.request
+from email.message import EmailMessage
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import skyscanner
@@ -106,6 +109,86 @@ def send_telegram(token, chat_id, text):
         payload = json.loads(resp.read().decode("utf-8"))
     if not payload.get("ok"):
         raise RuntimeError("텔레그램 응답: %s" % payload)
+
+
+def compose_alert_html(trip, best, offers, alert_cfg, site_url):
+    """이메일용 HTML. 메일 클라이언트 호환을 위해 인라인 스타일만 쓴다."""
+    adults = int(trip.get("adults", 1))
+    baseline = alert_cfg.get("baseline_per_person")
+    links = booking_links(trip)
+    e = html.escape
+
+    rows = ""
+    for o in offers[:4]:
+        stops = o.get("stops")
+        stop_txt = "직항" if stops == 0 else ("%s회 경유" % stops if stops else "—")
+        when = (o.get("depart_at") or "")[:16].replace("T", " ")
+        rows += (
+            '<tr>'
+            '<td style="padding:10px 0;border-bottom:1px solid #eee;font:600 15px sans-serif">%s</td>'
+            '<td style="padding:10px 0;border-bottom:1px solid #eee;font:14px sans-serif;color:#555">%s</td>'
+            '<td style="padding:10px 0;border-bottom:1px solid #eee;font:13px sans-serif;color:#777">%s</td>'
+            '<td style="padding:10px 0;border-bottom:1px solid #eee;font:13px sans-serif;color:#777;text-align:right">%s</td>'
+            '</tr>' % (won(o["price_per_person"]), e(airline_ko(o.get("airline"))),
+                       e(stop_txt), e(when))
+        )
+
+    diff_line = ""
+    if baseline:
+        d = best - int(baseline)
+        diff_line = ('<p style="margin:6px 0 0;font:14px sans-serif;color:#666">'
+                     '지난 구매가(%s/인) 대비 <b>%s%s</b></p>'
+                     % (won(baseline), "+" if d > 0 else "", won(d)))
+
+    site_line = ""
+    if site_url:
+        site_line = ('<p style="margin:22px 0 0;font:14px sans-serif">'
+                     '<a href="%s" style="color:#0F6E78">가격 추이 전체 보기 →</a></p>'
+                     % e(site_url))
+
+    return """<div style="max-width:560px;margin:0 auto;padding:28px 24px;
+       font-family:-apple-system,'Apple SD Gothic Neo',sans-serif;color:#1B2E33">
+  <div style="font:600 11px sans-serif;letter-spacing:.2em;color:#888">BOHOL · PANGLAO</div>
+  <h1 style="margin:10px 0 4px;font:600 22px sans-serif">✈️ 목표가에 도달했습니다</h1>
+  <p style="margin:0;font:14px sans-serif;color:#666">%s → %s · %s ~ %s · %d인 왕복%s</p>
+
+  <div style="margin:24px 0;padding:20px;background:#F7F3EC;border-radius:6px">
+    <div style="font:700 34px sans-serif;letter-spacing:-.02em">%s<span
+      style="font:400 15px sans-serif;color:#777"> / 1인 왕복</span></div>
+    <p style="margin:6px 0 0;font:14px sans-serif;color:#666">%d인 총액 %s</p>
+    %s
+  </div>
+
+  <table style="width:100%%;border-collapse:collapse">%s</table>
+
+  <p style="margin:24px 0 0;font:14px sans-serif">
+    <a href="%s" style="color:#0F6E78">스카이스캐너에서 확인 →</a><br>
+    <a href="%s" style="color:#0F6E78">네이버항공권에서 확인 →</a>
+  </p>
+  %s
+  <p style="margin:26px 0 0;font:12px sans-serif;color:#999;line-height:1.7">
+    실제 결제가는 예약 사이트에서 최종 확인하세요.<br>
+    이 메일은 보홀 항공권 추적기가 자동으로 보냈습니다.</p>
+</div>""" % (
+        e(trip.get("origin_name", trip["origin"])),
+        e(trip.get("destination_name", trip["destination"])),
+        e(trip["departure_date"]), e(trip["return_date"]), adults,
+        " · 직항" if trip.get("non_stop_only") else "",
+        won(best), adults, won(best * adults), diff_line, rows,
+        e(links["skyscanner"]), e(links["naver"]), site_line)
+
+
+def send_email(user, app_password, to_list, subject, text_body, html_body):
+    msg = EmailMessage()
+    msg["Subject"] = subject
+    msg["From"] = "보홀 항공권 추적기 <%s>" % user
+    msg["To"] = ", ".join(to_list)
+    msg.set_content(text_body)
+    msg.add_alternative(html_body, subtype="html")
+    with smtplib.SMTP("smtp.gmail.com", 587, timeout=30) as smtp:
+        smtp.starttls()
+        smtp.login(user, app_password)
+        smtp.send_message(msg)
 
 
 def should_alert(best, alert_cfg, history):
@@ -219,20 +302,43 @@ def main():
 
     # ---- 알림 판정: 30만원대 이하일 때만
     alerted, reason = False, "가격을 가져오지 못함"
+    channel_log = []
     if best is not None:
         ok, reason = should_alert(best, alert_cfg, history)
-        token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
-        chat_id = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
-        if ok and token and chat_id:
-            try:
-                send_telegram(token, chat_id,
-                              compose_alert(trip, best, offers, alert_cfg, site_url))
+        if ok:
+            text = compose_alert(trip, best, offers, alert_cfg, site_url)
+
+            token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
+            chat_id = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
+            if token and chat_id:
+                try:
+                    send_telegram(token, chat_id, text)
+                    channel_log.append("텔레그램: 발송")
+                except Exception as e:
+                    channel_log.append("텔레그램: 실패(%s)" % e)
+
+            gmail_user = os.environ.get("GMAIL_USER", "").strip()
+            gmail_pw = os.environ.get("GMAIL_APP_PASSWORD", "").strip()
+            to_list = [a.strip() for a in
+                       os.environ.get("ALERT_EMAIL_TO", "").split(",") if a.strip()]
+            if gmail_user and gmail_pw and to_list:
+                try:
+                    send_email(
+                        gmail_user, gmail_pw, to_list,
+                        "[보홀 항공권] 목표가 도달 — %s / 1인" % won(best),
+                        text,
+                        compose_alert_html(trip, best, offers, alert_cfg, site_url))
+                    channel_log.append("이메일: %d명에게 발송" % len(to_list))
+                except Exception as e:
+                    channel_log.append("이메일: 실패(%s)" % e)
+
+            if not channel_log:
+                reason = "조건 충족했으나 알림 채널 설정이 없어 발송 생략"
+            elif any("발송" in c for c in channel_log):
                 history["alerts"].append({"at": stamp, "price": best})
-                alerted, reason = True, "알림 발송"
-            except Exception as e:
-                reason = "알림 발송 실패: %s" % e
-        elif ok:
-            reason = "조건 충족했으나 텔레그램 설정이 없어 발송 생략"
+                alerted, reason = True, " / ".join(channel_log)
+            else:
+                reason = " / ".join(channel_log)
 
     write_json(HISTORY_PATH, history)
     write_json(LATEST_PATH, {
