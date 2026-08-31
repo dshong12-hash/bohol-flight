@@ -12,15 +12,12 @@
     "country_code": "KR",
     "cabin_class": "economy"
   },
-
-  "_skyId_주석": "collector/find_ids.py 를 한 번 실행해서 얻은 값을 채우세요. 비워두면 매 수집마다 API 호출을 2회 더 써서 무료 한도를 빨리 소진합니다.",
   "sky_ids": {
     "origin_sky_id": "ICN",
-    "origin_entity_id": "",
+    "origin_entity_id": "95673659",
     "destination_sky_id": "TAG",
-    "destination_entity_id": ""
+    "destination_entity_id": "95673598"
   },
-
   "alert": {
     "threshold_per_person": 399000,
     "baseline_per_person": 350000,

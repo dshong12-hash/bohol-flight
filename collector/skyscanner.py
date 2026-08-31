@@ -117,7 +117,11 @@ def _parse_itineraries(payload, currency):
 
 
 def search_round_trip(trip, ids, api_key):
-    """왕복 조회. 1인 기준으로 요청해 가격을 1인가로 확정한다."""
+    """왕복 조회. 1인 기준으로 요청해 가격을 1인가로 확정한다.
+
+    v1 이 아닌 v2 를 쓴다. 같은 호출 1회로 v1 이 놓치는 항공사(필리핀항공 등)까지
+    잡히기 때문이다. 무료 등급 한도가 빠듯하므로 재조회(polling)는 하지 않는다.
+    """
     missing = [k for k in ("origin_sky_id", "origin_entity_id",
                            "destination_sky_id", "destination_entity_id")
                if not ids.get(k)]
@@ -138,8 +142,9 @@ def search_round_trip(trip, ids, api_key):
         "currency": trip.get("currency", "KRW"),
         "market": trip.get("market", "ko-KR"),
         "countryCode": trip.get("country_code", "KR"),
+        "sortBy": "price_high",   # 이름과 달리 최저가순 정렬
     }
-    payload = _get("/api/v1/flights/searchFlights", params, api_key)
+    payload = _get("/api/v2/flights/searchFlights", params, api_key)
 
     if payload.get("status") is False:
         raise SkyscannerError("조회 실패: %s" % (payload.get("message") or payload))
