@@ -28,6 +28,26 @@ LATEST_PATH = os.path.join(DATA_DIR, "latest.json")
 KST = dt.timezone(dt.timedelta(hours=9))
 MAX_OFFERS_KEPT = 12
 
+# 스카이스캐너는 항공사명을 영문으로 준다. 알림 문구를 한글로 맞춘다.
+AIRLINE_KO = {
+    "Jeju Air": "제주항공", "Jin Air": "진에어", "T'way Air": "티웨이항공",
+    "Tway Air": "티웨이항공", "Air Busan": "에어부산", "Air Seoul": "에어서울",
+    "Korean Air": "대한항공", "Asiana Airlines": "아시아나항공",
+    "Philippine Airlines": "필리핀항공", "Cebu Pacific": "세부퍼시픽",
+    "Philippines AirAsia": "필리핀 에어아시아", "AirAsia": "에어아시아",
+    "Cathay Pacific": "캐세이퍼시픽", "Singapore Airlines": "싱가포르항공",
+    "Scoot": "스쿠트", "EVA Air": "에바항공", "China Airlines": "중화항공",
+    "Vietjet Air": "비엣젯항공", "Vietnam Airlines": "베트남항공",
+    "Japan Airlines": "일본항공", "All Nippon Airways": "전일본공수",
+    "Malaysia Airlines": "말레이시아항공", "Batik Air": "바틱에어",
+}
+
+
+def airline_ko(name):
+    if not name:
+        return "항공사 미상"
+    return AIRLINE_KO.get(name.strip(), name)
+
 
 def now_kst():
     return dt.datetime.now(KST)
@@ -130,7 +150,7 @@ def compose_alert(trip, best, offers, alert_cfg, site_url):
         stop_txt = "직항" if stops == 0 else ("%s회 경유" % stops if stops else "경유 정보 없음")
         when = (o.get("depart_at") or "")[:16].replace("T", " ")
         lines.append("· %s  %s  %s  %s" % (
-            won(o["price_per_person"]), o.get("airline") or "항공사 미상", stop_txt, when))
+            won(o["price_per_person"]), airline_ko(o.get("airline")), stop_txt, when))
     lines += [
         "",
         "예약 확인:",

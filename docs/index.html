@@ -4,315 +4,565 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>보홀 항공권 최저가 추적</title>
+<meta name="description" content="인천 → 보홀 팡라오 직항 왕복 항공권 최저가 추적">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@200;300;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#f6f7f9; --panel:#ffffff; --line:#e3e6ea; --ink:#12161c; --muted:#6b7683;
-    --accent:#2563eb; --good:#0f9d58; --good-bg:#e7f6ee; --warn:#b45309; --warn-bg:#fdf3e3;
-    --bad:#c0392b; --bad-bg:#fdecea; --grid:#eceff3; --shadow:0 1px 3px rgba(16,24,40,.06),0 1px 2px rgba(16,24,40,.04);
+    --bg:#F7F3EC; --surface:#FFFFFF; --surface-2:#FCFAF5;
+    --line:#E7E0D3; --hair:#F0EBE0;
+    --ink:#1B2E33; --ink-2:#405054; --muted:#8B9A9B;
+    --sea:#0F6E78; --sea-soft:#E6F1F1;
+    --gold:#A5824C; --gold-soft:#F4EDE0;
+    --good:#2C7A58; --good-soft:#E7F2EC;
+    --bad:#A4453A;
+    --shadow:0 1px 2px rgba(27,46,51,.04), 0 8px 28px -18px rgba(27,46,51,.22);
+    --serif:"Noto Serif KR", "Apple SD Gothic Neo", Georgia, serif;
+    --sans:-apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard",
+           "Malgun Gothic", system-ui, sans-serif;
   }
   @media (prefers-color-scheme: dark){
     :root{
-      --bg:#0f1319; --panel:#161b23; --line:#262d38; --ink:#e8ecf1; --muted:#94a1b1;
-      --accent:#60a5fa; --good:#4ade80; --good-bg:#12291d; --warn:#fbbf24; --warn-bg:#2a2113;
-      --bad:#f87171; --bad-bg:#2b1616; --grid:#1e242e; --shadow:none;
+      --bg:#081214; --surface:#0E1D20; --surface-2:#112326;
+      --line:#1E3237; --hair:#16272B;
+      --ink:#ECF3F1; --ink-2:#BCCECC; --muted:#7B9296;
+      --sea:#54C1C8; --sea-soft:#0E2B2F;
+      --gold:#D6B078; --gold-soft:#231C11;
+      --good:#5CBE91; --good-soft:#102A20;
+      --bad:#E08376;
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 34px -20px rgba(0,0,0,.9);
     }
   }
   *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
   body{
     margin:0; background:var(--bg); color:var(--ink);
-    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard",
-      "Malgun Gothic",system-ui,sans-serif;
-    line-height:1.55; -webkit-font-smoothing:antialiased;
+    font-family:var(--sans); line-height:1.6; word-break:keep-all;
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
   }
-  .wrap{max-width:880px; margin:0 auto; padding:28px 18px 64px}
-  header{margin-bottom:22px}
-  h1{font-size:21px; margin:0 0 6px; letter-spacing:-.02em}
-  .route{color:var(--muted); font-size:14px}
-  .card{background:var(--panel); border:1px solid var(--line); border-radius:14px;
-        padding:20px; margin-bottom:16px; box-shadow:var(--shadow)}
-  .card h2{font-size:13px; margin:0 0 14px; color:var(--muted);
-           font-weight:600; letter-spacing:.02em}
 
-  .badge{display:inline-block; padding:4px 11px; border-radius:999px;
-         font-size:12.5px; font-weight:700}
-  .badge.good{background:var(--good-bg); color:var(--good)}
-  .badge.warn{background:var(--warn-bg); color:var(--warn)}
-  .badge.bad{background:var(--bad-bg); color:var(--bad)}
+  /* ─────────── 히어로: 보홀의 밤바다 ─────────── */
+  .hero{
+    position:relative; overflow:hidden; isolation:isolate;
+    background:
+      radial-gradient(118% 82% at 84% 96%,
+        rgba(247,188,120,.52) 0%, rgba(216,133,88,.24) 28%, transparent 58%),
+      linear-gradient(168deg,#04202A 0%,#06333E 34%,#094B57 63%,#0D6570 86%,#12777F 100%);
+    color:#EAF6F5; padding:0;
+  }
+  .hero-waves{position:absolute; left:0; right:0; bottom:-1px; z-index:-1; display:block; width:100%}
+  .hero-inner{max-width:940px; margin:0 auto; padding:64px 26px 74px}
 
-  .price{font-size:46px; font-weight:750; letter-spacing:-.03em; margin:10px 0 2px;
-         font-variant-numeric:tabular-nums}
-  .price .unit{font-size:19px; font-weight:600; color:var(--muted); margin-left:5px}
-  .sub{color:var(--muted); font-size:14px}
+  .eyebrow{
+    font-size:11px; letter-spacing:.34em; text-transform:uppercase;
+    color:rgba(226,244,242,.62); font-weight:600; margin-bottom:20px;
+  }
+  .place{
+    font-family:var(--serif); font-weight:200; font-size:clamp(46px,10vw,74px);
+    line-height:1.02; letter-spacing:.02em; margin:0 0 16px;
+  }
+  .place em{font-style:normal; display:block; font-size:.3em; letter-spacing:.24em;
+            color:rgba(226,244,242,.5); font-weight:300; margin-top:14px}
+  .journey{
+    display:flex; flex-wrap:wrap; align-items:baseline; gap:8px 16px;
+    font-size:14.5px; color:rgba(226,244,242,.78); margin-bottom:34px;
+  }
+  .journey .sep{color:rgba(226,244,242,.3)}
+  .dday{
+    font-family:var(--serif); font-weight:300; letter-spacing:.06em;
+    color:#F0C89A; font-size:15px;
+  }
 
-  .stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
-         gap:14px; margin-top:20px; padding-top:18px; border-top:1px solid var(--line)}
-  .stat .k{font-size:12px; color:var(--muted); margin-bottom:3px}
-  .stat .v{font-size:17px; font-weight:650; font-variant-numeric:tabular-nums}
-  .delta.up{color:var(--bad)} .delta.down{color:var(--good)}
+  .rule{height:1px; background:linear-gradient(90deg,
+        rgba(240,200,154,.55), rgba(240,200,154,.12) 46%, transparent);
+        margin:0 0 30px}
 
-  .chart-wrap{overflow-x:auto}
-  svg{display:block; width:100%; height:auto; min-width:420px}
-  .empty{color:var(--muted); font-size:14px; text-align:center; padding:34px 0}
+  .quote{
+    font-family:var(--serif); font-weight:300; font-size:15.5px; line-height:1.85;
+    color:rgba(226,244,242,.7); max-width:30em; margin:0 0 34px;
+  }
 
-  table{width:100%; border-collapse:collapse; font-size:14px}
-  th{text-align:left; font-size:12px; color:var(--muted); font-weight:600;
-     padding:0 10px 9px 0; border-bottom:1px solid var(--line); white-space:nowrap}
-  td{padding:11px 10px 11px 0; border-bottom:1px solid var(--grid);
-     vertical-align:middle}
-  tr:last-child td{border-bottom:none}
-  td.num{font-variant-numeric:tabular-nums; font-weight:650; white-space:nowrap}
-  .tag{display:inline-block; padding:2px 8px; border-radius:6px; font-size:11.5px;
-       background:var(--grid); color:var(--muted); white-space:nowrap}
-  .tag.direct{background:var(--good-bg); color:var(--good); font-weight:650}
-  .table-scroll{overflow-x:auto}
+  .price-badge{
+    display:inline-block; padding:6px 15px; border-radius:999px; font-size:12px;
+    font-weight:650; letter-spacing:.02em; margin-bottom:18px;
+    border:1px solid rgba(240,200,154,.34); color:#F3D3AB;
+    background:rgba(240,200,154,.09);
+  }
+  .price-badge.hit{border-color:rgba(139,226,180,.42); color:#A9EBC9;
+                   background:rgba(139,226,180,.11)}
+  .price{
+    font-family:var(--serif); font-weight:200; letter-spacing:-.015em;
+    font-size:clamp(48px,11.5vw,82px); line-height:1; margin:0;
+    font-variant-numeric:tabular-nums;
+  }
+  .price .cur{font-size:.34em; font-weight:300; margin-left:8px;
+              color:rgba(226,244,242,.62)}
+  .price-sub{margin-top:14px; font-size:14px; color:rgba(226,244,242,.62)}
 
-  .links{display:flex; flex-wrap:wrap; gap:9px}
-  .links a{display:inline-block; padding:9px 15px; border-radius:9px; font-size:14px;
-           text-decoration:none; border:1px solid var(--line); color:var(--ink);
-           background:var(--panel); font-weight:550}
-  .links a:hover{border-color:var(--accent); color:var(--accent)}
+  /* ─────────── 본문 ─────────── */
+  main{max-width:940px; margin:0 auto; padding:0 26px 76px}
 
-  .notice{padding:12px 14px; border-radius:10px; font-size:13.5px; margin-bottom:16px}
-  .notice.err{background:var(--bad-bg); color:var(--bad)}
-  .notice.info{background:var(--grid); color:var(--muted)}
-  footer{color:var(--muted); font-size:12.5px; margin-top:26px; line-height:1.7}
+  .strip{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(158px,1fr));
+    background:var(--surface); border:1px solid var(--line); border-radius:3px;
+    box-shadow:var(--shadow); margin:-38px 0 34px; position:relative; z-index:2;
+    overflow:hidden;
+  }
+  .strip .cell{padding:22px 22px 20px; border-right:1px solid var(--hair)}
+  .strip .cell:last-child{border-right:none}
+  .cell .k{font-size:10.5px; letter-spacing:.15em; text-transform:uppercase;
+           color:var(--muted); font-weight:650; margin-bottom:9px}
+  .cell .v{font-family:var(--serif); font-weight:500; font-size:20px;
+           font-variant-numeric:tabular-nums; letter-spacing:-.01em; line-height:1.25}
+  .cell .v.up{color:var(--bad)} .cell .v.down{color:var(--good)}
+  .cell .n{font-size:11.5px; color:var(--muted); margin-top:4px; font-family:var(--sans)}
+
+  section.card{
+    background:var(--surface); border:1px solid var(--line); border-radius:3px;
+    padding:30px 28px; margin-bottom:22px; box-shadow:var(--shadow);
+  }
+  .card-head{display:flex; align-items:baseline; justify-content:space-between;
+             gap:14px; margin-bottom:26px; flex-wrap:wrap}
+  h2{font-family:var(--serif); font-weight:500; font-size:17px; margin:0;
+     letter-spacing:.01em}
+  .card-note{font-size:12px; color:var(--muted)}
+
+  .chart-wrap{overflow-x:auto; margin:0 -4px}
+  svg.chart{display:block; width:100%; height:auto; min-width:440px}
+  @media (max-width:640px){ svg.chart{min-width:0} .chart-wrap{overflow-x:visible} }
+  .empty{color:var(--muted); font-size:14px; text-align:center; padding:40px 10px;
+         line-height:1.9; font-family:var(--serif); font-weight:300}
+  .empty b{font-weight:500; color:var(--ink-2)}
+
+  /* 항공편 카드 */
+  .flight{
+    display:grid; grid-template-columns:1fr auto; gap:6px 20px; align-items:center;
+    padding:20px 0; border-bottom:1px solid var(--hair);
+  }
+  .flight:last-child{border-bottom:none}
+  .flight:first-child{padding-top:2px}
+  .fl-main{display:flex; align-items:baseline; gap:11px; flex-wrap:wrap}
+  .fl-air{font-weight:650; font-size:15px}
+  .chip{
+    display:inline-block; padding:2.5px 9px; border-radius:2px; font-size:10.5px;
+    font-weight:700; letter-spacing:.09em; text-transform:uppercase;
+  }
+  .chip.direct{background:var(--good-soft); color:var(--good)}
+  .chip.stop{background:var(--hair); color:var(--muted)}
+  .fl-meta{font-size:13px; color:var(--muted); margin-top:5px}
+  .fl-meta span{white-space:nowrap}
+  .fl-dot{color:var(--line); margin:0 8px}
+  .fl-price{text-align:right}
+  .fl-price .p{font-family:var(--serif); font-weight:500; font-size:20px;
+               font-variant-numeric:tabular-nums; white-space:nowrap}
+  .fl-price .t{font-size:12px; color:var(--muted); margin-top:2px; white-space:nowrap}
+
+  .links{display:flex; flex-wrap:wrap; gap:11px}
+  .links a{
+    flex:1 1 auto; text-align:center; min-width:132px;
+    padding:14px 18px; border-radius:2px; font-size:13.5px; font-weight:600;
+    text-decoration:none; border:1px solid var(--line); color:var(--ink);
+    background:var(--surface-2); transition:.18s ease; letter-spacing:.01em;
+  }
+  .links a:hover{border-color:var(--sea); color:var(--sea);
+                 transform:translateY(-1px)}
+  .fine{font-size:12.5px; color:var(--muted); line-height:1.8; margin:20px 0 0}
+
+  #notice:not(:empty){margin-bottom:60px}
+  .notice{padding:14px 17px; border-radius:2px; font-size:13.5px; margin-bottom:22px;
+          border-left:2px solid}
+  .notice.err{background:var(--gold-soft); color:var(--bad); border-color:var(--bad)}
+  .notice.info{background:var(--surface-2); color:var(--muted); border-color:var(--line)}
+
+  footer{
+    text-align:center; color:var(--muted); font-size:12px; line-height:2;
+    padding-top:16px; border-top:1px solid var(--hair);
+  }
+  footer .mark{font-family:var(--serif); font-size:13px; color:var(--ink-2);
+               letter-spacing:.2em; display:block; margin-bottom:8px}
+
+  @media (max-width:640px){
+    .hero-inner{padding:52px 20px 62px}
+    main{padding:0 20px 60px}
+    section.card{padding:24px 20px}
+    .strip{grid-template-columns:repeat(2,1fr)}
+    .strip .cell{border-right:none; border-bottom:1px solid var(--hair); padding:18px 18px 16px}
+    .strip .cell:nth-child(odd){border-right:1px solid var(--hair)}
+    .strip .cell:last-child{border-bottom:none}
+    .strip .cell:last-child:nth-child(odd){grid-column:1/-1; border-right:none}
+    .flight{grid-template-columns:1fr; gap:10px}
+    .fl-price{text-align:left; display:flex; align-items:baseline; gap:10px}
+    .fl-price .t{margin-top:0}
+  }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <h1>✈️ 보홀 항공권 최저가 추적</h1>
-    <div class="route" id="route">불러오는 중…</div>
-  </header>
 
+<header class="hero">
+  <svg class="hero-waves" viewBox="0 0 1440 120" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M0,64 C240,104 420,18 720,52 C1010,84 1200,26 1440,58 L1440,120 L0,120 Z"
+          fill="rgba(255,255,255,.085)"/>
+    <path d="M0,84 C260,50 480,110 760,80 C1030,52 1230,100 1440,78 L1440,120 L0,120 Z"
+          fill="rgba(255,255,255,.10)"/>
+    <path d="M0,104 C300,84 560,120 860,102 C1120,88 1290,114 1440,100 L1440,120 L0,120 Z"
+          fill="var(--bg)"/>
+  </svg>
+
+  <div class="hero-inner">
+    <div class="eyebrow">Bohol · Panglao Island</div>
+    <h1 class="place">보홀<em>Philippines</em></h1>
+    <div class="journey" id="journey"><span>불러오는 중…</span></div>
+    <div class="rule"></div>
+    <p class="quote" id="quote">
+      투명한 바다와 초콜릿 힐스가 있는 섬으로, 가장 좋은 값에 떠나기 위해.
+    </p>
+    <div id="hero-price"></div>
+  </div>
+</header>
+
+<main>
   <div id="notice"></div>
-
-  <section class="card" id="hero">
-    <div class="empty">데이터를 불러오는 중…</div>
-  </section>
+  <div class="strip" id="strip"></div>
 
   <section class="card">
-    <h2>가격 추이 (1인 왕복)</h2>
+    <div class="card-head">
+      <h2>가격의 흐름</h2>
+      <span class="card-note">1인 왕복 기준 · 12시간마다 기록</span>
+    </div>
     <div class="chart-wrap" id="chart"><div class="empty">—</div></div>
   </section>
 
   <section class="card">
-    <h2 id="offers-title">최저가 후보</h2>
-    <div class="table-scroll" id="offers"><div class="empty">—</div></div>
+    <div class="card-head">
+      <h2 id="offers-title">항공편</h2>
+      <span class="card-note" id="offers-note"></span>
+    </div>
+    <div id="offers"><div class="empty">—</div></div>
   </section>
 
   <section class="card">
-    <h2>예약 사이트에서 확인</h2>
+    <div class="card-head"><h2>예약처에서 확인</h2></div>
     <div class="links" id="links"></div>
-    <p class="sub" style="margin:14px 0 0">
-      수집값은 스카이스캐너 데이터 기반 참고용입니다. LCC 특가·유류할증료 반영 시점 차이로
-      실제 결제가와 다를 수 있으니 결제 전 위 사이트에서 최종 확인하세요.
+    <p class="fine">
+      표시된 가격은 스카이스캐너 데이터를 기반으로 한 참고값입니다.
+      특가 소진이나 유류할증료 반영 시점에 따라 실제 결제 금액과 다를 수 있으니,
+      결제 전 위 예약처에서 최종 가격을 확인해 주세요.
     </p>
   </section>
 
-  <footer id="footer"></footer>
-</div>
+  <footer>
+    <span class="mark">BOHOL 2026</span>
+    <span id="footer-text"></span>
+  </footer>
+</main>
 
 <script>
-const won = n => Number(n).toLocaleString("ko-KR") + "원";
-const el  = id => document.getElementById(id);
+const won   = n => Number(n).toLocaleString("ko-KR") + "원";
+const wonN  = n => Number(n).toLocaleString("ko-KR");
+const el    = id => document.getElementById(id);
+const DAYS  = ["일","월","화","수","목","금","토"];
 
-function fmtDate(iso, withTime){
-  if(!iso) return "—";
-  const d = new Date(iso);
-  if(isNaN(d)) return iso;
-  const p = n => String(n).padStart(2,"0");
-  const base = `${d.getFullYear()}.${p(d.getMonth()+1)}.${p(d.getDate())}`;
-  return withTime ? `${base} ${p(d.getHours())}:${p(d.getMinutes())}` : base;
+// 스카이스캐너는 항공사명을 영문으로 준다. 이 노선에서 나올 만한 것들을 한글로 옮긴다.
+const AIRLINE_KO = {
+  "Jeju Air":"제주항공", "Jin Air":"진에어", "T'way Air":"티웨이항공", "Tway Air":"티웨이항공",
+  "Air Busan":"에어부산", "Air Seoul":"에어서울", "Korean Air":"대한항공",
+  "Asiana Airlines":"아시아나항공", "Philippine Airlines":"필리핀항공",
+  "Cebu Pacific":"세부퍼시픽", "Philippines AirAsia":"필리핀 에어아시아",
+  "AirAsia":"에어아시아", "AirAsia Philippines":"필리핀 에어아시아",
+  "Cathay Pacific":"캐세이퍼시픽", "Singapore Airlines":"싱가포르항공", "Scoot":"스쿠트",
+  "EVA Air":"에바항공", "China Airlines":"중화항공", "Vietjet Air":"비엣젯항공",
+  "Vietnam Airlines":"베트남항공", "Japan Airlines":"일본항공",
+  "All Nippon Airways":"전일본공수", "Malaysia Airlines":"말레이시아항공",
+  "Batik Air":"바틱에어", "Qatar Airways":"카타르항공",
+};
+const airlineName = n => n ? (AIRLINE_KO[n.trim()] || n) : "항공사 미상";
+
+function parseDate(s){ const d = new Date(s); return isNaN(d) ? null : d; }
+function pad(n){ return String(n).padStart(2,"0"); }
+
+function fmtDay(iso){                       // 2026.11.18 수
+  const d = parseDate(iso); if(!d) return "—";
+  return `${d.getFullYear()}.${pad(d.getMonth()+1)}.${pad(d.getDate())} ${DAYS[d.getDay()]}`;
+}
+function fmtShort(iso){                     // 11.18
+  const d = parseDate(iso); if(!d) return "—";
+  return `${pad(d.getMonth()+1)}.${pad(d.getDate())}`;
+}
+function fmtStamp(iso){                     // 2026.08.31 22:39
+  const d = parseDate(iso); if(!d) return "—";
+  return `${d.getFullYear()}.${pad(d.getMonth()+1)}.${pad(d.getDate())} `
+       + `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function fmtTime(iso){                      // 11.18 20:45
+  const d = parseDate(iso); if(!d) return "—";
+  return `${pad(d.getMonth()+1)}.${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function fmtDur(min){
+  if(!min) return "—";
+  const h = Math.floor(min/60), m = min%60;
+  return m ? `${h}시간 ${m}분` : `${h}시간`;
+}
+function dday(dep){
+  const d = parseDate(dep); if(!d) return null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  d.setHours(0,0,0,0);
+  return Math.round((d - today) / 86400000);
 }
 
 async function load(name){
   const r = await fetch(`./data/${name}.json?t=${Date.now()}`);
-  if(!r.ok) throw new Error(`${name}.json 을 불러오지 못했습니다 (${r.status})`);
+  if(!r.ok) throw new Error(`${name}.json (${r.status})`);
   return r.json();
 }
 
+/* ─────────── 히어로 ─────────── */
 function renderHero(latest){
   const t = latest.trip || {};
   const adults = t.adults || 1;
+  const nights = (() => {
+    const a = parseDate(t.departure_date), b = parseDate(t.return_date);
+    return (a && b) ? Math.round((b - a) / 86400000) : null;
+  })();
+
+  const parts = [
+    `<span>${fmtDay(t.departure_date)}</span>`,
+    `<span class="sep">→</span>`,
+    `<span>${fmtDay(t.return_date)}</span>`,
+  ];
+  if(nights) parts.push(`<span class="sep">·</span><span>${nights}박 ${nights+1}일</span>`);
+  parts.push(`<span class="sep">·</span><span>${adults}인 왕복</span>`);
+  if(latest.direct_only) parts.push(`<span class="sep">·</span><span>직항</span>`);
+  const d = dday(t.departure_date);
+  if(d !== null && d >= 0)
+    parts.push(`<span class="sep">·</span><span class="dday">${d === 0 ? "오늘 출발" : "D-" + d}</span>`);
+  el("journey").innerHTML = parts.join("");
+
   const best = latest.best_per_person;
-  const thr = latest.threshold_per_person;
-  const base = latest.baseline_per_person;
-  const low = latest.all_time_low;
+  const thr  = latest.threshold_per_person;
 
   if(best == null){
-    el("hero").innerHTML =
-      `<div class="empty">아직 수집된 가격이 없습니다.<br>
-       GitHub Actions 의 <b>항공권 가격 수집</b> 워크플로를 한 번 실행해 보세요.</div>`;
+    el("hero-price").innerHTML =
+      `<div class="price-badge">수집 대기 중</div>
+       <div class="price-sub" style="margin-top:6px">
+         아직 가격이 기록되지 않았습니다. 다음 수집 시각에 채워집니다.</div>`;
     return;
   }
 
   const hit = best <= thr;
-  const badge = hit
-    ? `<span class="badge good">🎯 목표가 도달 · 30만원대</span>`
-    : `<span class="badge warn">목표가(${won(thr)})까지 ${won(best - thr)} 남음</span>`;
+  el("hero-price").innerHTML = `
+    <div class="price-badge ${hit ? "hit" : ""}">${
+      hit ? "목표가 도달 · 지금이 기회입니다"
+          : `목표가까지 ${wonN(best - thr)}원 남음`}</div>
+    <div class="price">${wonN(best)}<span class="cur">원</span></div>
+    <div class="price-sub">1인 왕복 · ${adults}인 총액 ${won(best * adults)}</div>`;
+}
 
-  const deltaBase = base != null ? best - base : null;
-  const stat = (k, v, cls) =>
-    `<div class="stat"><div class="k">${k}</div><div class="v ${cls||""}">${v}</div></div>`;
+/* ─────────── 요약 스트립 ─────────── */
+function renderStrip(latest){
+  const best = latest.best_per_person;
+  const base = latest.baseline_per_person;
+  const cell = (k, v, cls, note) =>
+    `<div class="cell"><div class="k">${k}</div>
+     <div class="v ${cls||""}">${v}</div>${note ? `<div class="n">${note}</div>` : ""}</div>`;
 
-  el("hero").innerHTML = `
-    ${badge}
-    <div class="price">${won(best)}<span class="unit">/ 1인 왕복</span></div>
-    <div class="sub">${adults}인 총액 ${won(best * adults)}</div>
-    <div class="stats">
-      ${stat("역대 최저가", low != null ? won(low) : "—")}
-      ${stat("목표가", won(thr))}
-      ${base != null ? stat("지난 구매가 대비",
-          (deltaBase > 0 ? "+" : "") + won(deltaBase),
-          deltaBase > 0 ? "delta up" : "delta down") : ""}
-      ${latest.direct_only && latest.one_stop_min != null
-          ? stat("참고 · 1회 경유", won(latest.one_stop_min)) : ""}
-      ${stat("마지막 수집", fmtDate(latest.collected_at, true))}
-    </div>`;
+  let html = "";
+  html += cell("역대 최저", latest.all_time_low != null ? won(latest.all_time_low) : "—");
+  html += cell("목표가", won(latest.threshold_per_person), "", "30만원대");
+  if(base != null && best != null){
+    const d = best - base;
+    html += cell("지난 구매가 대비", (d > 0 ? "+" : "") + won(d),
+                 d > 0 ? "up" : "down", `기준 ${won(base)}`);
+  }
+  if(latest.direct_only && latest.one_stop_min != null)
+    html += cell("1회 경유", won(latest.one_stop_min), "", "참고용");
+  html += cell("마지막 수집", fmtStamp(latest.collected_at));
+  el("strip").innerHTML = html;
+}
+
+/* ─────────── 가격 추이 ─────────── */
+function smoothPath(pts){
+  if(pts.length < 2) return "";
+  let d = `M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`;
+  for(let i = 0; i < pts.length - 1; i++){
+    const p0 = pts[i-1] || pts[i], p1 = pts[i], p2 = pts[i+1], p3 = pts[i+2] || p2;
+    const c1x = p1[0] + (p2[0]-p0[0])/6, c1y = p1[1] + (p2[1]-p0[1])/6;
+    const c2x = p2[0] - (p3[0]-p1[0])/6, c2y = p2[1] - (p3[1]-p1[1])/6;
+    d += ` C${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} `
+       + `${p2[0].toFixed(1)},${p2[1].toFixed(1)}`;
+  }
+  return d;
 }
 
 function renderChart(history, latest){
-  const pts = (history.points || []).slice(-120);
+  const pts = (history.points || []).slice(-140);
   const box = el("chart");
-  if(pts.length === 0){ box.innerHTML = `<div class="empty">아직 기록이 없습니다.</div>`; return; }
+
+  if(pts.length === 0){
+    box.innerHTML = `<div class="empty">아직 기록이 없습니다.<br>
+      첫 수집이 끝나면 이곳에 흐름이 그려집니다.</div>`; return;
+  }
   if(pts.length === 1){
-    box.innerHTML = `<div class="empty">기록이 1건뿐입니다. 수집이 쌓이면 추이가 그려집니다.<br>
-      <b>${fmtDate(pts[0].at, true)}</b> · ${won(pts[0].best)}</div>`;
-    return;
+    box.innerHTML = `<div class="empty">
+      지금까지 기록은 한 번뿐입니다. 흐름은 두 번째 수집부터 그려집니다.<br>
+      <b>${fmtStamp(pts[0].at)}</b> · <b>${won(pts[0].best)}</b></div>`; return;
   }
 
-  const W = 720, H = 260, L = 66, R = 16, T = 18, B = 34;
+  const narrow = window.innerWidth < 640;
+  const W = narrow ? 430 : 900, H = narrow ? 260 : 300;
+  const L = 8, R = 8, T = narrow ? 22 : 26, B = narrow ? 34 : 40;
+  const FS = narrow ? 13 : 10.5, FSL = narrow ? 13.5 : 11;
   const thr = latest.threshold_per_person;
   const vals = pts.map(p => p.best);
   let lo = Math.min(...vals, thr), hi = Math.max(...vals, thr);
-  const pad = Math.max((hi - lo) * 0.15, 10000);
+  const pad = Math.max((hi - lo) * .18, 8000);
   lo -= pad; hi += pad;
 
-  const x = i => L + (W - L - R) * (pts.length === 1 ? 0.5 : i / (pts.length - 1));
+  const x = i => L + (W - L - R) * (i / (pts.length - 1));
   const y = v => T + (H - T - B) * (1 - (v - lo) / (hi - lo));
+  const xy = pts.map((p,i) => [x(i), y(p.best)]);
 
-  // y축 눈금
   let grid = "";
-  for(let i = 0; i <= 4; i++){
-    const v = lo + (hi - lo) * i / 4, yy = y(v);
-    grid += `<line x1="${L}" y1="${yy}" x2="${W-R}" y2="${yy}" stroke="var(--grid)" stroke-width="1"/>
-             <text x="${L-9}" y="${yy+4}" text-anchor="end" font-size="10.5"
-                   fill="var(--muted)">${Math.round(v/10000)}만</text>`;
+  for(let i = 0; i <= 3; i++){
+    const v  = lo + (hi - lo) * i / 3, yy = y(v);
+    grid += `<line x1="${L}" y1="${yy.toFixed(1)}" x2="${W-R}" y2="${yy.toFixed(1)}"
+                   stroke="var(--hair)" stroke-width="1"/>
+             <text x="${L+2}" y="${(yy-7).toFixed(1)}" font-size="${FS}"
+                   fill="var(--muted)" letter-spacing=".06em">${Math.round(v/10000)}만</text>`;
   }
 
-  const line = pts.map((p,i) => `${i?"L":"M"}${x(i).toFixed(1)},${y(p.best).toFixed(1)}`).join(" ");
-  const area = `${line} L${x(pts.length-1).toFixed(1)},${y(lo)} L${x(0).toFixed(1)},${y(lo)} Z`;
+  const line = smoothPath(xy);
+  const area = `${line} L${x(pts.length-1).toFixed(1)},${y(lo).toFixed(1)} `
+             + `L${x(0).toFixed(1)},${y(lo).toFixed(1)} Z`;
 
-  const minV = Math.min(...vals);
-  const dots = pts.map((p,i) => {
-    const isMin = p.best === minV;
-    return `<circle cx="${x(i).toFixed(1)}" cy="${y(p.best).toFixed(1)}"
-            r="${isMin?4.5:2.6}" fill="${isMin?"var(--good)":"var(--accent)"}">
-            <title>${fmtDate(p.at,true)} · ${won(p.best)}</title></circle>`;
-  }).join("");
+  const minV = Math.min(...vals), minI = vals.indexOf(minV);
+  const last = pts.length - 1;
 
-  // x축 라벨 (최대 5개)
-  const step = Math.max(1, Math.ceil(pts.length / 5));
+  let dots = "";
+  pts.forEach((p,i) => {
+    const isMin = i === minI, isLast = i === last;
+    if(!isMin && !isLast && pts.length > 30) return;
+    dots += `<circle cx="${x(i).toFixed(1)}" cy="${y(p.best).toFixed(1)}"
+             r="${isMin || isLast ? (narrow ? 3.4 : 4) : (narrow ? 1.8 : 2.2)}"
+             fill="${isMin ? "var(--good)" : "var(--sea)"}"
+             stroke="var(--surface)" stroke-width="${isMin || isLast ? 2 : 0}">
+             <title>${fmtStamp(p.at)} · ${won(p.best)}</title></circle>`;
+  });
+
+  const ticks = new Set([0, last]);
+  const step = Math.max(1, Math.ceil(pts.length / (narrow ? 3 : 5)));
+  for(let i = step; i < last - step * 0.5; i += step) ticks.add(i);
   let xlab = "";
-  for(let i = 0; i < pts.length; i += step){
-    xlab += `<text x="${x(i).toFixed(1)}" y="${H-11}" text-anchor="middle"
-             font-size="10.5" fill="var(--muted)">${fmtDate(pts[i].at)}</text>`;
-  }
+  [...ticks].sort((a,b) => a-b).forEach(i => {
+    const anchor = i === 0 ? "start" : (i === last ? "end" : "middle");
+    xlab += `<text x="${x(i).toFixed(1)}" y="${H-11}" text-anchor="${anchor}"
+             font-size="${FS}" fill="var(--muted)" letter-spacing=".05em">${fmtShort(pts[i].at)}</text>`;
+  });
 
   box.innerHTML = `
-  <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="항공권 가격 추이">
-    <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="var(--accent)" stop-opacity=".22"/>
-      <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>
-    </linearGradient></defs>
+  <svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="항공권 가격 추이">
+    <defs>
+      <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%"   stop-color="var(--sea)" stop-opacity=".20"/>
+        <stop offset="100%" stop-color="var(--sea)" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
     ${grid}
-    <path d="${area}" fill="url(#g)"/>
-    <path d="${line}" fill="none" stroke="var(--accent)" stroke-width="2.2"
-          stroke-linejoin="round" stroke-linecap="round"/>
-    <line x1="${L}" y1="${y(thr)}" x2="${W-R}" y2="${y(thr)}" stroke="var(--good)"
-          stroke-width="1.6" stroke-dasharray="5 4"/>
-    <text x="${W-R}" y="${y(thr)-7}" text-anchor="end" font-size="11"
-          font-weight="700" fill="var(--good)">목표 ${won(thr)}</text>
+    <path d="${area}" fill="url(#fade)"/>
+    <path d="${line}" fill="none" stroke="var(--sea)" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round"/>
+    <line x1="${L}" y1="${y(thr).toFixed(1)}" x2="${W-R}" y2="${y(thr).toFixed(1)}"
+          stroke="var(--gold)" stroke-width="1.4" stroke-dasharray="2 5"/>
+    <text x="${W-R}" y="${(y(thr)+17).toFixed(1)}" text-anchor="end" font-size="${FSL}"
+          font-weight="600" fill="var(--gold)" letter-spacing=".04em">목표 ${won(thr)}</text>
     ${dots}${xlab}
   </svg>`;
 }
 
+/* ─────────── 항공편 ─────────── */
 function renderOffers(latest){
   const offers = latest.offers || [];
   const adults = (latest.trip || {}).adults || 1;
+
   if(!offers.length){
     el("offers").innerHTML = `<div class="empty">${latest.direct_only
-      ? "이번 조회에서는 직항 편이 잡히지 않았습니다."
+      ? "이번 조회에서는 직항편이 잡히지 않았습니다."
       : "표시할 항공편이 없습니다."}</div>`;
     return;
   }
 
-  const rows = offers.map(o => {
+  el("offers").innerHTML = offers.map(o => {
     const s = o.stops;
-    const tag = s === 0 ? `<span class="tag direct">직항</span>`
-              : (s ? `<span class="tag">${s}회 경유</span>` : `<span class="tag">—</span>`);
-    const dur = o.duration_minutes
-      ? `${Math.floor(o.duration_minutes/60)}시간 ${o.duration_minutes%60}분` : "—";
-    return `<tr>
-      <td class="num">${won(o.price_per_person)}</td>
-      <td class="num" style="color:var(--muted);font-weight:500">${won(o.price_per_person*adults)}</td>
-      <td style="white-space:nowrap">${o.airline || "—"}</td>
-      <td>${tag}</td>
-      <td style="white-space:nowrap">${fmtDate(o.depart_at, true)}</td>
-      <td style="white-space:nowrap;color:var(--muted)">${dur}</td>
-    </tr>`;
+    const chip = s === 0
+      ? `<span class="chip direct">직항</span>`
+      : (s ? `<span class="chip stop">${s}회 경유</span>` : "");
+    const meta = [];
+    if(o.depart_at)        meta.push(`<span>가는 편 ${fmtTime(o.depart_at)}</span>`);
+    if(o.return_depart_at) meta.push(`<span>오는 편 ${fmtTime(o.return_depart_at)}</span>`);
+    if(o.duration_minutes) meta.push(`<span>${fmtDur(o.duration_minutes)}</span>`);
+    return `<div class="flight">
+      <div>
+        <div class="fl-main"><span class="fl-air">${airlineName(o.airline)}</span>${chip}</div>
+        <div class="fl-meta">${meta.join('<span class="fl-dot">·</span>')}</div>
+      </div>
+      <div class="fl-price">
+        <div class="p">${won(o.price_per_person)}</div>
+        <div class="t">${adults}인 ${won(o.price_per_person * adults)}</div>
+      </div>
+    </div>`;
   }).join("");
-
-  el("offers").innerHTML = `<table>
-    <thead><tr><th>1인</th><th>${adults}인 총액</th><th>항공사</th>
-      <th>경유</th><th>출발</th><th>소요</th></tr></thead>
-    <tbody>${rows}</tbody></table>`;
 }
 
 function renderLinks(latest){
   const L = latest.links || {};
   const names = {skyscanner:"스카이스캐너", naver:"네이버항공권", google:"구글 플라이트"};
-  el("links").innerHTML = Object.keys(names)
-    .filter(k => L[k])
-    .map(k => `<a href="${L[k]}" target="_blank" rel="noopener">${names[k]} ↗</a>`)
-    .join("");
+  el("links").innerHTML = Object.keys(names).filter(k => L[k])
+    .map(k => `<a href="${L[k]}" target="_blank" rel="noopener">${names[k]}</a>`).join("");
 }
 
 function renderNotice(latest){
   let html = "";
   if(latest.error)
-    html += `<div class="notice err"><b>마지막 수집 실패</b> — ${latest.error}</div>`;
+    html += `<div class="notice err"><b>마지막 수집에 실패했습니다</b> — ${latest.error}</div>`;
   if(latest.search_status && latest.search_status !== "complete")
-    html += `<div class="notice info">검색 상태: ${latest.search_status} — 결과가 일부만 반영됐을 수 있습니다.</div>`;
+    html += `<div class="notice info">검색이 ${latest.search_status} 상태로 마감되어
+             일부 결과가 빠졌을 수 있습니다.</div>`;
   el("notice").innerHTML = html;
 }
 
+/* ─────────── 시작 ─────────── */
 (async function(){
   try{
     const [latest, history] = await Promise.all([load("latest"), load("history")]);
-    const t = latest.trip || {};
-    el("route").textContent =
-      `${t.origin_name || t.origin} → ${t.destination_name || t.destination} · ` +
-      `${t.departure_date} ~ ${t.return_date} · ${t.adults || 1}인 왕복` +
-      (latest.direct_only ? " · 직항만" : "");
-    document.title = `보홀 항공권 ${latest.best_per_person ? won(latest.best_per_person) : ""}`.trim();
 
-    if(latest.direct_only) el("offers-title").textContent = "직항 후보";
     renderNotice(latest);
     renderHero(latest);
+    renderStrip(latest);
     renderChart(history, latest);
     renderOffers(latest);
     renderLinks(latest);
 
+    if(latest.direct_only){
+      el("offers-title").textContent = "직항편";
+      el("offers-note").textContent  = "경유편은 추적하지 않습니다";
+    }
+    if(latest.best_per_person)
+      document.title = `보홀 ${won(latest.best_per_person)} · 항공권 추적`;
+
+    let rt; addEventListener("resize", () => {
+      clearTimeout(rt);
+      rt = setTimeout(() => renderChart(history, latest), 180);
+    });
+
     const n = (history.points || []).length;
-    el("footer").innerHTML =
-      `총 ${n}회 수집 · 12시간마다 자동 갱신 · 마지막 갱신 ${fmtDate(history.updated_at, true)}<br>` +
-      `가격이 목표가 이하로 내려가면 텔레그램으로 알림이 갑니다.`;
+    el("footer-text").innerHTML =
+      `${n}회 기록 · 매일 09:10, 21:10 자동 수집<br>` +
+      `목표가 이하로 내려가면 텔레그램으로 알려드립니다`;
   }catch(e){
     el("notice").innerHTML =
       `<div class="notice err">데이터를 불러오지 못했습니다 — ${e.message}</div>`;
-    el("hero").innerHTML = `<div class="empty">아직 수집 데이터가 없습니다.</div>`;
+    el("journey").innerHTML = "<span>—</span>";
+    el("hero-price").innerHTML = `<div class="price-sub">잠시 후 새로고침해 주세요.</div>`;
   }
 })();
 </script>
