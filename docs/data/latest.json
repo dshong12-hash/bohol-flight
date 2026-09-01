@@ -1,5 +1,5 @@
 {
- "collected_at": "2026-09-01T14:00:04+09:00",
+ "collected_at": "2026-09-02T00:32:35+09:00",
  "trip": {
   "origin": "ICN",
   "destination": "TAG",
@@ -31,7 +31,7 @@
  "search_status": "incomplete",
  "direct_only": true,
  "listed_best": 711887,
- "one_stop_min": 426800,
+ "one_stop_min": 402730,
  "error": null,
  "alerted": false,
  "alert_reason": "목표가(399,000원) 초과",
