@@ -1,5 +1,5 @@
 {
- "collected_at": "2026-09-02T00:32:35+09:00",
+ "collected_at": "2026-09-02T10:24:12+09:00",
  "trip": {
   "origin": "ICN",
   "destination": "TAG",
@@ -12,12 +12,12 @@
  },
  "threshold_per_person": 399000,
  "baseline_per_person": 350000,
- "best_per_person": 711888,
- "best_total": 1423776,
+ "best_per_person": 732829,
+ "best_total": 1465658,
  "all_time_low": 688855,
  "offers": [
   {
-   "price_per_person": 711887,
+   "price_per_person": 732828,
    "currency": "KRW",
    "airline": "Jeju Air",
    "stops": 0,
@@ -30,8 +30,8 @@
  ],
  "search_status": "incomplete",
  "direct_only": true,
- "listed_best": 711887,
- "one_stop_min": 402730,
+ "listed_best": 732828,
+ "one_stop_min": 481340,
  "error": null,
  "alerted": false,
  "alert_reason": "목표가(399,000원) 초과",
