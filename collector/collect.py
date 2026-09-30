@@ -351,6 +351,7 @@ def main():
         "all_time_low": history["all_time_low"],
         "offers": offers[:MAX_OFFERS_KEPT],
         "search_status": status,
+        "api_quota": dict(skyscanner.LAST_QUOTA) or None,
         "direct_only": direct_only,
         "listed_best": listed,
         "one_stop_min": meta.get("one_stop_min"),
@@ -371,6 +372,9 @@ def main():
         print("  최저가: %s / 1인 (총 %s)" % (won(best), won(best * adults)))
         print("  역대 최저: %s" % won(history["all_time_low"]))
     print("  알림: %s (%s)" % ("발송" if alerted else "안 함", reason))
+    q = skyscanner.LAST_QUOTA
+    if q.get("remaining") is not None:
+        print("  API 남은 호출: %s / %s회" % (q["remaining"], q.get("limit")))
     return 0 if not error else 1
 
 

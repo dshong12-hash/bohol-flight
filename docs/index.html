@@ -232,7 +232,7 @@
   <section class="card">
     <div class="card-head">
       <h2>가격의 흐름</h2>
-      <span class="card-note">1인 왕복 기준 · 12시간마다 기록</span>
+      <span class="card-note">1인 왕복 기준 · 월·수·금 아침 기록</span>
     </div>
     <div class="chart-wrap" id="chart"><div class="empty">—</div></div>
   </section>
@@ -582,9 +582,12 @@ function renderNotice(latest){
     });
 
     const n = (history.points || []).length;
+    const q = latest.api_quota || {};
+    const quota = (q.remaining != null && q.limit != null)
+      ? ` · 이번 달 남은 조회 ${q.remaining}/${q.limit}회` : "";
     el("footer-text").innerHTML =
-      `${n}회 기록 · 매일 09:10, 21:10 자동 수집<br>` +
-      `목표가 이하로 내려가면 텔레그램으로 알려드립니다`;
+      `${n}회 기록 · 월·수·금 08:47 자동 수집${quota}<br>` +
+      `목표가 이하로 내려가면 텔레그램과 메일로 알려드립니다`;
   }catch(e){
     el("notice").innerHTML =
       `<div class="notice err">데이터를 불러오지 못했습니다 — ${e.message}</div>`;

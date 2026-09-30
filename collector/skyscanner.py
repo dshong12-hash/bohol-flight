@@ -19,6 +19,25 @@ HOST = "sky-scrapper.p.rapidapi.com"
 BASE = "https://" + HOST
 TIMEOUT = 40
 
+# 마지막 응답의 RapidAPI 호출 한도 헤더. 무료(BASIC) 등급은 월 20회뿐이라
+# 남은 횟수를 사이트에 보여줘서 바닥나기 전에 알 수 있게 한다.
+LAST_QUOTA = {}
+
+
+def _record_quota(headers):
+    def num(name):
+        v = headers.get(name)
+        try:
+            return int(v) if v is not None else None
+        except ValueError:
+            return None
+    LAST_QUOTA.clear()
+    LAST_QUOTA.update({
+        "limit": num("x-ratelimit-requests-limit"),
+        "remaining": num("x-ratelimit-requests-remaining"),
+        "reset_seconds": num("x-ratelimit-requests-reset"),
+    })
+
 
 class SkyscannerError(Exception):
     pass
@@ -33,11 +52,14 @@ def _get(path, params, api_key):
     })
     try:
         with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+            _record_quota(resp.headers)
             return json.loads(resp.read().decode("utf-8"))
     except urllib.error.HTTPError as e:
+        _record_quota(e.headers)
         detail = e.read().decode("utf-8", "replace")[:400]
         if e.code == 429:
-            raise SkyscannerError("RapidAPI 호출 한도 초과(429). 무료 등급은 월 100회입니다. %s" % detail)
+            raise SkyscannerError("RapidAPI 이번 달 호출 한도를 다 썼습니다(429). "
+                                  "무료 등급은 월 20회입니다. %s" % detail)
         if e.code in (401, 403):
             raise SkyscannerError("RapidAPI 인증 실패(%s). RAPIDAPI_KEY 와 Sky-Scrapper 구독 상태를 확인하세요. %s" % (e.code, detail))
         raise SkyscannerError("HTTP %s - %s" % (e.code, detail))
