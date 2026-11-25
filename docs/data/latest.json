@@ -1,5 +1,5 @@
 {
- "collected_at": "2026-11-23T12:59:52+09:00",
+ "collected_at": "2026-11-25T14:41:00+09:00",
  "trip": {
   "origin": "ICN",
   "destination": "TAG",
@@ -19,8 +19,8 @@
  "search_status": null,
  "api_quota": {
   "limit": 20,
-  "remaining": 10,
-  "reset_seconds": 724089
+  "remaining": 9,
+  "reset_seconds": 545218
  },
  "direct_only": true,
  "listed_best": null,
